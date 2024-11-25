@@ -2,15 +2,31 @@ pipeline {
     agent any
 
     environment {
-        // Definir variables de entorno, por ejemplo:
+        // Definir variables de entorno
         SONARQUBE_SERVER = 'SonarQube-Server'
         ARTIFACTORY_URL = 'http://artifactory.example.com/artifactory'
         ARTIFACTORY_REPO = 'libs-release-local'
         ARTIFACT_NAME = 'monolitica-app'
         VERSION = '1.0.0'
+
+        // SonarQube
+        SONAR_URL = 'http://172.174.20.139:9000/'
+        SONAR_TOKEN = 'squ_c0eb7d6f5f5ff29ea8dfb1b234cd339ffd64b765'
+    }
+
+    tools {
+        maven 'Maven' // Asegúrate de configurar Maven en Jenkins
+        jdk 'Java 11' // Configura Java 11 en Jenkins
     }
 
     stages {
+        stage('Setup') {
+            steps {
+                echo 'Setting up permissions for mvnw...'
+                sh 'chmod +x ./mvnw' // Ajusta los permisos del archivo mvnw
+            }
+        }
+
         stage('Clone Repository') {
             steps {
                 // Clonar el repositorio Git
@@ -22,39 +38,42 @@ pipeline {
             steps {
                 script {
                     // Ejecutar Maven para compilar y empaquetar el artefacto
-                    sh 'mvn clean install -DskipTests'
+                    sh './mvnw clean package -DskipTests'
                 }
             }
         }
 
-        stage('Test') {
+        stage('Testing (JUnit + Jacoco)') {
             steps {
-                script {
-                    // Ejecutar las pruebas unitarias con Maven y generar reporte JaCoCo
-                    sh 'mvn test'
-                }
+                echo 'Running tests and generating coverage report...'
+                sh './mvnw test'
+                sh './mvnw jacoco:report'
             }
         }
 
-        stage('JaCoCo Report') {
+        stage('Sonar Analysis') {
             steps {
-                script {
-                    // Ejecutar JaCoCo para analizar la cobertura de pruebas
-                    sh 'mvn jacoco:report'
-                }
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    // Análisis de código con SonarQube
-                    sh '''
-                        mvn clean verify sonar:sonar \
+                echo 'Analyzing code quality with SonarQube...'
+                withSonarQubeEnv('SonarQube') { // 'SonarQube' debe coincidir con el nombre configurado en Jenkins
+                    sh """
+                        ./mvnw sonar:sonar \
                         -Dsonar.projectKey=monolitica-app \
-                        -Dsonar.host.url=http://$SONARQUBE_SERVER \
-                        -Dsonar.login=$SONARQUBE_TOKEN
-                    '''
+                        -Dsonar.host.url=${SONAR_URL} \
+                        -Dsonar.login=${SONAR_TOKEN}
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                script {
+                    timeout(time: 60, unit: 'MINUTES') {  // Incrementa el tiempo de espera
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
@@ -79,15 +98,11 @@ pipeline {
     }
 
     post {
-        always {
-            // Limpiar recursos al final
-            cleanWs()
-        }
         success {
-            echo 'Build and deployment successful!'
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Build or deployment failed!'
+            echo 'Pipeline failed!'
         }
     }
 }
