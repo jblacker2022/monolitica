@@ -30,7 +30,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 // Clonar el repositorio Git
-                git branch: 'main', url: 'https://github.com/jblacker2022/monolitica.git'
+                git branch: 'master', url: 'https://github.com/jblacker2022/monolitica.git'
             }
         }
 
