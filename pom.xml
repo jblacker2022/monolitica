@@ -114,11 +114,13 @@
                 <version>0.8.7</version>
                 <executions>
                     <execution>
+                        <id>prepare-agent</id> <!-- Asignado ID único -->
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
                     <execution>
+                        <id>generate-report</id> <!-- Asignado ID único -->
                         <goals>
                             <goal>report</goal>
                         </goals>
