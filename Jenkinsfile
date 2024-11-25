@@ -22,8 +22,10 @@ pipeline {
     stages {
         stage('Setup') {
             steps {
-                echo 'Setting up permissions for mvnw...'
-                sh 'chmod +x ./mvnw' // Ajusta los permisos del archivo mvnw
+                echo 'Verificando permisos de mvnw...'
+                sh 'ls -l ./mvnw' // Verificar permisos del archivo
+                echo 'Configurando permisos para mvnw...'
+                sh 'chmod 755 ./mvnw' // Asegura que el archivo sea completamente ejecutable
             }
         }
 
