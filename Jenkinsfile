@@ -94,22 +94,7 @@ pipeline {
             }
         }
 
-        stage('Publish to Artifactory') {
-            steps {
-                script {
-                    sh '''
-                        mvn deploy:deploy-file \
-                        -Dfile=target/$ARTIFACT_NAME-$VERSION.jar \
-                        -DgroupId=com.example \
-                        -DartifactId=$ARTIFACT_NAME \
-                        -Dversion=$VERSION \
-                        -Dpackaging=jar \
-                        -DrepositoryId=artifactory \
-                        -Durl=$ARTIFACTORY_URL/$ARTIFACTORY_REPO
-                    '''
-                }
-            }
-        }
+        // Etapa de publicación en Artifactory eliminada
     }
 
     post {
