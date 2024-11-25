@@ -90,6 +90,7 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Jacoco agent for code coverage -->
         <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>org.jacoco.agent</artifactId>
@@ -117,9 +118,21 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Agregar configuración de Jacoco Plugin -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.7</version> <!-- Usa la versión más reciente de Jacoco -->
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
-
-
 </project>
