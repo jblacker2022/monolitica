@@ -2,37 +2,51 @@ pipeline {
     agent any
 
     environment {
-        // Definir variables de entorno
         SONARQUBE_SERVER = 'SonarQube-Server'
         ARTIFACTORY_URL = 'http://artifactory.example.com/artifactory'
         ARTIFACTORY_REPO = 'libs-release-local'
         ARTIFACT_NAME = 'monolitica-app'
         VERSION = '1.0.0'
-
-        // SonarQube
         SONAR_URL = 'http://172.174.20.139:9000/'
         SONAR_TOKEN = 'squ_c0eb7d6f5f5ff29ea8dfb1b234cd339ffd64b765'
     }
 
     tools {
-        maven 'Maven' // Asegúrate de configurar Maven en Jenkins
-        jdk 'Java 11' // Configura Java 11 en Jenkins
+        maven 'Maven'
+        jdk 'Java 11'
     }
 
     stages {
         stage('Setup') {
             steps {
                 echo 'Verificando permisos de mvnw...'
-                sh 'ls -l ./mvnw' // Verificar permisos del archivo
+                sh 'ls -l ./mvnw' // Verificar permisos del archivo mvnw
                 echo 'Configurando permisos para mvnw...'
-                sh 'chmod 755 ./mvnw' // Asegura que el archivo sea completamente ejecutable
+                sh 'chmod +x ./mvnw' // Asegura que el archivo sea completamente ejecutable
+                sh 'ls -l ./mvnw' // Verificar nuevamente los permisos
             }
         }
 
         stage('Clone Repository') {
             steps {
-                // Clonar el repositorio Git
                 git branch: 'master', url: 'https://github.com/jblacker2022/monolitica.git'
+            }
+        }
+
+        stage('Fix Permissions') {
+            steps {
+                script {
+                    // Verificar permisos del archivo mvnw y corregir si es necesario
+                    sh 'ls -l ./mvnw' // Ver permisos actuales
+                    sh 'chmod +x ./mvnw' // Asegurarse de que el archivo es ejecutable
+                    sh 'ls -l ./mvnw' // Verificar los permisos después de corregir
+                }
+            }
+        }
+
+        stage('Test mvnw execution') {
+            steps {
+                sh './mvnw --version' // Verifica que el archivo mvnw sea ejecutable
             }
         }
 
@@ -55,8 +69,8 @@ pipeline {
 
         stage('Sonar Analysis') {
             steps {
-                echo 'Analyzing code quality with SonarQube...'
-                withSonarQubeEnv('SonarQube') { // 'SonarQube' debe coincidir con el nombre configurado en Jenkins
+                echo 'Analizando calidad del código con SonarQube...'
+                withSonarQubeEnv('SonarQube') {
                     sh """
                         ./mvnw sonar:sonar \
                         -Dsonar.projectKey=monolitica-app \
@@ -70,7 +84,7 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 script {
-                    timeout(time: 60, unit: 'MINUTES') {  // Incrementa el tiempo de espera
+                    timeout(time: 60, unit: 'MINUTES') {
                         def qg = waitForQualityGate()
                         if (qg.status != 'OK') {
                             error "Pipeline aborted due to quality gate failure: ${qg.status}"
@@ -83,7 +97,6 @@ pipeline {
         stage('Publish to Artifactory') {
             steps {
                 script {
-                    // Publicar el artefacto en Artifactory
                     sh '''
                         mvn deploy:deploy-file \
                         -Dfile=target/$ARTIFACT_NAME-$VERSION.jar \
